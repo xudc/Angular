@@ -121,7 +121,7 @@ def ts_api_guardian_test_npm_package(
         data = data,
         entry_point = "@angular//tools/ts-api-guardian:bin/ts-api-guardian",
         templated_args = args + ["--verifyDir", goldenDir, "--rootDir", actualDir],
-        tags = ["api_guard"],
+        tags = kwargs.pop("tags", []) + ["api_guard"],
         **kwargs
     )
 
@@ -131,6 +131,6 @@ def ts_api_guardian_test_npm_package(
         data = data,
         entry_point = "@angular//tools/ts-api-guardian:bin/ts-api-guardian",
         templated_args = args + ["--outDir", goldenDir, "--rootDir", actualDir],
-        tags = ["api_guard"],
+        tags = kwargs.pop("tags", []) + ["api_guard"],
         **kwargs
     )
