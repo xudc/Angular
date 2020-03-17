@@ -28,6 +28,12 @@ import {Render3ParseResult} from '../r3_template_transform';
 import {prepareSyntheticListenerFunctionName, prepareSyntheticPropertyName, typeWithParameters} from '../util';
 
 import {R3ComponentDef, R3ComponentMetadata, R3DirectiveDef, R3DirectiveMetadata, R3HostMetadata, R3QueryMetadata} from './api';
+import {parse} from './pipeline/input/template';
+import {emitTemplateFunction} from './pipeline/output/template_function';
+import {ElementAttrLiftingStage, ElementAttrLiftingTransform} from './pipeline/stages/element_attr_lifting';
+import {ElementAttrsTransform} from './pipeline/stages/element_attrs';
+import {ResolverStage} from './pipeline/stages/resolver';
+import {SlotAllocatorStage, SlotAllocatorTransform} from './pipeline/stages/slot_allocator';
 import {MIN_STYLING_BINDING_SLOTS_REQUIRED, StylingBuilder, StylingInstructionCall} from './styling_builder';
 import {BindingScope, TemplateDefinitionBuilder, ValueConverter, makeBindingParser, prepareEventListenerParameters, renderFlagCheckIfStmt, resolveSanitizationFn} from './template';
 import {CONTEXT_NAME, DefinitionMap, RENDER_FLAGS, TEMPORARY_NAME, asLiteral, chainedInstruction, conditionallyCreateMapObjectLiteral, getQueryPredicate, temporaryAllocator} from './util';
@@ -175,33 +181,43 @@ export function compileComponentFromMetadata(
   const changeDetection = meta.changeDetection;
 
   const template = meta.template;
-  const templateBuilder = new TemplateDefinitionBuilder(
-      constantPool, BindingScope.ROOT_SCOPE, 0, templateTypeName, null, null, templateName,
-      directiveMatcher, directivesUsed, meta.pipes, pipesUsed, R3.namespaceHTML,
-      meta.relativeContextFilePath, meta.i18nUseExternalIds);
 
-  const templateFunctionExpression = templateBuilder.buildTemplateFunction(template.nodes, []);
+  const root = parse(template.nodes, `${meta.name}_Template`);
+
+  new ResolverStage().transform(root);
+  new SlotAllocatorStage().transform(root);
+  new ElementAttrsTransform().transform(root);
+  new ElementAttrLiftingStage().transform(root);
+
+  // const templateBuilder = new TemplateDefinitionBuilder(
+  //     constantPool, BindingScope.ROOT_SCOPE, 0, templateTypeName, null, null, templateName,
+  //     directiveMatcher, directivesUsed, meta.pipes, pipesUsed, R3.namespaceHTML,
+  //     meta.relativeContextFilePath, meta.i18nUseExternalIds);
+
+  // const templateFunctionExpression = templateBuilder.buildTemplateFunction(template.nodes, []);
 
   // We need to provide this so that dynamically generated components know what
   // projected content blocks to pass through to the component when it is instantiated.
-  const ngContentSelectors = templateBuilder.getNgContentSelectors();
-  if (ngContentSelectors) {
-    definitionMap.set('ngContentSelectors', ngContentSelectors);
-  }
+  // const ngContentSelectors = templateBuilder.getNgContentSelectors();
+  // if (ngContentSelectors) {
+  //   definitionMap.set('ngContentSelectors', ngContentSelectors);
+  // }
 
   // e.g. `decls: 2`
-  definitionMap.set('decls', o.literal(templateBuilder.getConstCount()));
+  // definitionMap.set('decls', o.literal(templateBuilder.getConstCount()));
 
-  // e.g. `vars: 2`
-  definitionMap.set('vars', o.literal(templateBuilder.getVarCount()));
+  // // e.g. `vars: 2`
+  // definitionMap.set('vars', o.literal(templateBuilder.getVarCount()));
 
   // e.g. `consts: [['one', 'two'], ['three', 'four']]
-  const consts = templateBuilder.getConsts();
-  if (consts.length > 0) {
-    definitionMap.set('consts', o.literalArr(consts));
+  // const consts = templateBuilder.getConsts();
+  if (root.attrs !== null && root.attrs.length > 0) {
+    definitionMap.set('consts', o.literalArr(root.attrs));
   }
 
-  definitionMap.set('template', templateFunctionExpression);
+
+
+  definitionMap.set('template', emitTemplateFunction(root));
 
   // e.g. `directives: [MyDirective]`
   if (directivesUsed.size) {
