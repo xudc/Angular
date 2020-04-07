@@ -121,7 +121,7 @@ describe('compiler compliance', () => {
       expectEmit(result.source, template, 'Incorrect template');
     });
 
-    fit('should translate DOM structure', () => {
+    it('should translate DOM structure', () => {
       const files = {
         app: {
           'spec.ts': `
@@ -498,7 +498,7 @@ describe('compiler compliance', () => {
       expectEmit(result.source, template, 'Incorrect template');
     });
 
-    fit('should de-duplicate attribute arrays', () => {
+    it('should de-duplicate attribute arrays', () => {
       const files = {
         app: {
           'spec.ts': `
@@ -789,7 +789,7 @@ describe('compiler compliance', () => {
          expectEmit(source, MyComponentFactory, 'Incorrect MyComponent.ɵfac');
        });
 
-    fit('should support structural directives', () => {
+    it('should support structural directives', () => {
       const files = {
         app: {
           'spec.ts': `
@@ -3663,7 +3663,7 @@ describe('compiler compliance', () => {
       expectEmit(result.source, expectedOutput, 'Invalid directive definition');
     });
 
-    it('should add an abstract directive if a host listener is present', () => {
+    fit('should add an abstract directive if a host listener is present', () => {
       const files = {
         app: {
           'spec.ts': `
@@ -3698,7 +3698,7 @@ describe('compiler compliance', () => {
             });
           }
         }
-      });
+      }
       // ...
       `;
       const result = compile(files, angularFiles);
